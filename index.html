@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recibos Alquileres</title>
+<style>
+:root {
+  --bg: #eef1f4; --surface: #ffffff; --ink: #14202e; --muted: #5b6878; --line: #d5dbe3;
+  --accent: #1d4e89; --accent-ink: #ffffff; --ok: #1d7a4f; --err: #c0392b;
+  --paper: #ffffff; --paper-ink: #14202e; --paper-muted: #5b6878; --paper-line: #d5dbe3;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #0f151c; --surface: #171f29; --ink: #e6ebf1; --muted: #93a0b0; --line: #2a3543;
+    --accent: #6aa7ea; --accent-ink: #0b1220; --ok: #5fc08f; --err: #ff8a80; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; }
+h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 24px; }
+.grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.seg { display: flex; gap: 6px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { flex: 1 1 0; text-align: center; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: 500; }
+.seg input:checked + label { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+select, input[type="text"] { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.money { font-family: var(--mono); font-size: 1.05rem; }
+select:focus-visible, input[type="text"]:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { font: inherit; font-weight: 600; border-radius: 8px; padding: 12px 14px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.btn:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.status { min-height: 1.3em; font-size: 0.85rem; color: var(--muted); }
+.status.ok { color: var(--ok); } .status.err { color: var(--err); }
+
+.stage { min-width: 0; }
+.paper { background: var(--paper); color: var(--paper-ink); border: 1px solid var(--paper-line); border-radius: 4px; padding: clamp(20px, 5vw, 44px); box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.08); }
+.p-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 2px solid var(--paper-ink); }
+.p-title { font-size: 1.7rem; font-weight: 600; letter-spacing: 0.06em; margin: 0; }
+.p-num { font-family: var(--mono); font-size: 0.85rem; color: var(--paper-muted); }
+.p-emisor { margin: 10px 0 0; color: var(--paper-muted); font-size: 0.9rem; }
+.p-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; margin: 22px 0; }
+@media (max-width: 480px) { .p-meta { grid-template-columns: minmax(0, 1fr); } }
+.p-meta dt { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--paper-muted); }
+.p-meta dd { margin: 2px 0 0; font-weight: 500; overflow-wrap: anywhere; }
+.p-table { width: 100%; border-collapse: collapse; }
+.p-table th { text-align: left; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--paper-muted); padding: 8px 0; border-bottom: 1px solid var(--paper-ink); }
+.p-table th:last-child, .p-table td:last-child { text-align: right; }
+.p-table td { padding: 10px 0; border-bottom: 1px solid var(--paper-line); }
+.p-table td:last-child { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 12px; }
+.p-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 14px 0 6px; font-weight: 600; }
+.p-total .amt { font-family: var(--mono); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.p-words { color: var(--paper-muted); font-size: 0.88rem; margin: 6px 0 0; }
+.p-sign { margin-top: 56px; display: flex; justify-content: flex-end; }
+.p-sign .line { width: 200px; max-width: 100%; border-top: 1px solid var(--paper-ink); padding-top: 6px; font-size: 0.8rem; color: var(--paper-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Recibos Alquileres</h1>
+  <p class="sub">Elegí el departamento, cargá alquiler y servicios, y descargá el recibo en PDF.</p>
+
+  <div class="grid">
+    <form class="panel" id="form" autocomplete="off">
+      <div class="field">
+        <span class="label">Departamento</span>
+        <div class="seg" id="deptoSeg" role="radiogroup" aria-label="Departamento"></div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label class="label" for="mes">Mes</label>
+          <select id="mes"></select>
+        </div>
+        <div class="field">
+          <label class="label" for="anio">Año</label>
+          <select id="anio"></select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="alquiler">Alquiler ($)</label>
+        <input id="alquiler" class="money" type="text" inputmode="numeric" placeholder="490.000">
+      </div>
+      <div class="field">
+        <label class="label" for="servicios">Servicios ($)</label>
+        <input id="servicios" class="money" type="text" inputmode="numeric" placeholder="89.512">
+      </div>
+
+      <div class="field">
+        <label class="label" for="emisor">Emisor (opcional)</label>
+        <input id="emisor" type="text" placeholder="Tu nombre, como querés que figure">
+      </div>
+
+      <button class="btn" id="dl" type="submit">Descargar PDF</button>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </form>
+
+    <section class="stage" id="stage" aria-label="Vista previa del recibo"></section>
+  </div>
+</div>
+
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>
+(function () {
+  // Departamentos e inquilinos. Para cambiar un nombre o sumar un depto, editá esta lista.
+  var DEPTOS = [
+    { name: 'Fondo', tenant: 'Gonzalo Rasente' },
+    { name: 'Costado', tenant: 'Florencia Vidal' }
+  ];
+  var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var KEY = 'recibos-alquileres:v1';
+  var $ = function (id) { return document.getElementById(id); };
+  var now = new Date();
+  var st = { depto: DEPTOS[0].name, mes: now.getMonth() + 1, anio: now.getFullYear(), alquiler: 0, servicios: 0, emisor: '' };
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function fmt(n) { return '$ ' + Math.round(n).toLocaleString('es-AR'); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function digits(s) { return parseInt(String(s).replace(/\D/g, ''), 10) || 0; }
+  function show(n) { return n ? n.toLocaleString('es-AR') : ''; }
+
+  // Número a letras
+  var U = ['cero','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte','veintiuno','veintidós','veintitrés','veinticuatro','veinticinco','veintiséis','veintisiete','veintiocho','veintinueve'];
+  var D = { 3:'treinta', 4:'cuarenta', 5:'cincuenta', 6:'sesenta', 7:'setenta', 8:'ochenta', 9:'noventa' };
+  var C = ['','ciento','doscientos','trescientos','cuatrocientos','quinientos','seiscientos','setecientos','ochocientos','novecientos'];
+  function below1000(n) {
+    if (n === 100) return 'cien';
+    var c = Math.floor(n / 100), r = n % 100, p = [];
+    if (c) p.push(C[c]);
+    if (r) { if (r < 30) p.push(U[r]); else { var d = Math.floor(r / 10), u = r % 10; p.push(D[d] + (u ? ' y ' + U[u] : '')); } }
+    return p.join(' ');
+  }
+  function apocope(s) { return s.replace(/veintiuno$/, 'veintiún').replace(/uno$/, 'un'); }
+  function letras(n) {
+    n = Math.round(n);
+    if (n === 0) return 'cero';
+    var mill = Math.floor(n / 1e6), miles = Math.floor((n % 1e6) / 1000), resto = n % 1000, p = [];
+    if (mill) p.push(mill === 1 ? 'un millón' : apocope(below1000(mill)) + ' millones');
+    if (miles) p.push(miles === 1 ? 'mil' : apocope(below1000(miles)) + ' mil');
+    if (resto) p.push(below1000(resto));
+    return p.join(' ');
+  }
+
+  function rec() {
+    var d = DEPTOS.filter(function (x) { return x.name === st.depto; })[0] || DEPTOS[0];
+    return {
+      depto: d.name, tenant: d.tenant,
+      period: cap(MESES[st.mes - 1]) + ' ' + st.anio,
+      number: st.anio + pad2(st.mes) + '-' + d.name.slice(0, 3).toUpperCase(),
+      lines: [['Alquiler', st.alquiler], ['Servicios', st.servicios]],
+      total: st.alquiler + st.servicios
+    };
+  }
+
+  function renderPreview() {
+    var r = rec();
+    $('dl').disabled = r.total <= 0;
+    $('stage').innerHTML =
+      '<article class="paper">' +
+        '<div class="p-head"><h2 class="p-title">RECIBO</h2><span class="p-num">N° ' + esc(r.number) + '</span></div>' +
+        (st.emisor ? '<p class="p-emisor">' + esc(st.emisor) + '</p>' : '') +
+        '<dl class="p-meta">' +
+          '<div><dt>Período</dt><dd>' + esc(r.period) + '</dd></div>' +
+          '<div><dt>Departamento</dt><dd>' + esc(r.depto) + '</dd></div>' +
+          '<div><dt>Inquilino</dt><dd>' + esc(r.tenant) + '</dd></div>' +
+          '<div><dt>Emitido</dt><dd>' + now.toLocaleDateString('es-AR') + '</dd></div>' +
+        '</dl>' +
+        '<table class="p-table"><thead><tr><th>Concepto</th><th>Importe</th></tr></thead><tbody>' +
+          r.lines.map(function (l) { return '<tr><td>' + l[0] + '</td><td>' + fmt(l[1]) + '</td></tr>'; }).join('') +
+        '</tbody></table>' +
+        '<div class="p-total"><span>TOTAL</span><span class="amt">' + fmt(r.total) + '</span></div>' +
+        '<p class="p-words">Son pesos ' + esc(letras(r.total)) + '.</p>' +
+        '<div class="p-sign"><div class="line">Firma</div></div>' +
+      '</article>';
+  }
+
+  function buildPdf(r) {
+    var doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+    var L = 20, R = 190, y = 28, ink = [20, 32, 46], muted = [91, 104, 120];
+    doc.setTextColor.apply(doc, ink);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(24); doc.text('RECIBO', L, y);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor.apply(doc, muted);
+    doc.text('N° ' + r.number, R, y, { align: 'right' });
+    y += 5; doc.setDrawColor.apply(doc, ink); doc.setLineWidth(0.6); doc.line(L, y, R, y);
+    if (st.emisor) { y += 8; doc.setFontSize(10.5); doc.text(st.emisor, L, y); }
+    y += 14;
+    [['PERÍODO', r.period], ['DEPARTAMENTO', r.depto], ['INQUILINO', r.tenant], ['EMITIDO', now.toLocaleDateString('es-AR')]].forEach(function (m, i) {
+      var x = i % 2 === 0 ? L : 110, yy = y + Math.floor(i / 2) * 15;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor.apply(doc, muted); doc.text(m[0], x, yy);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11.5); doc.setTextColor.apply(doc, ink); doc.text(String(m[1]), x, yy + 5.5);
+    });
+    y += 38;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor.apply(doc, muted);
+    doc.text('CONCEPTO', L, y); doc.text('IMPORTE', R, y, { align: 'right' });
+    y += 2.5; doc.setDrawColor.apply(doc, ink); doc.setLineWidth(0.4); doc.line(L, y, R, y);
+    doc.setDrawColor(213, 219, 227); doc.setLineWidth(0.2);
+    r.lines.forEach(function (l) {
+      y += 8.5;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11.5); doc.setTextColor.apply(doc, ink);
+      doc.text(l[0], L, y); doc.text(fmt(l[1]), R, y, { align: 'right' });
+      y += 3; doc.line(L, y, R, y);
+    });
+    y += 12;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.text('TOTAL', L, y);
+    doc.setFontSize(18); doc.text(fmt(r.total), R, y, { align: 'right' });
+    y += 9;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor.apply(doc, muted);
+    doc.text(doc.splitTextToSize('Son pesos ' + letras(r.total) + '.', R - L), L, y);
+    doc.setDrawColor.apply(doc, ink); doc.setLineWidth(0.3); doc.line(130, 255, R, 255);
+    doc.setFontSize(9); doc.text('Firma', 130, 260);
+    return doc;
+  }
+
+  function setStatus(msg, kind) { var s = $('status'); s.textContent = msg || ''; s.className = 'status' + (kind ? ' ' + kind : ''); }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify({ emisor: st.emisor, depto: st.depto })); } catch (e) {} }
+
+  // Controles
+  $('deptoSeg').innerHTML = DEPTOS.map(function (d, i) {
+    return '<input type="radio" name="depto" id="d' + i + '" value="' + esc(d.name) + '"' + (i === 0 ? ' checked' : '') + '><label for="d' + i + '">' + esc(d.name) + '</label>';
+  }).join('');
+  $('mes').innerHTML = MESES.map(function (m, i) { return '<option value="' + (i + 1) + '">' + cap(m) + '</option>'; }).join('');
+  var years = []; for (var y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) years.push(y);
+  $('anio').innerHTML = years.map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+  $('mes').value = st.mes; $('anio').value = st.anio;
+
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved) {
+      st.emisor = saved.emisor || '';
+      if (DEPTOS.some(function (d) { return d.name === saved.depto; })) st.depto = saved.depto;
+    }
+  } catch (e) {}
+  $('emisor').value = st.emisor;
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="depto"]'), function (el) { el.checked = el.value === st.depto; });
+
+  $('deptoSeg').addEventListener('change', function (e) { st.depto = e.target.value; save(); setStatus(''); renderPreview(); });
+  $('mes').addEventListener('change', function (e) { st.mes = +e.target.value; setStatus(''); renderPreview(); });
+  $('anio').addEventListener('change', function (e) { st.anio = +e.target.value; setStatus(''); renderPreview(); });
+  ['alquiler', 'servicios'].forEach(function (id) {
+    $(id).addEventListener('input', function (e) {
+      st[id] = digits(e.target.value);
+      e.target.value = show(st[id]);
+      setStatus(''); renderPreview();
+    });
+  });
+  $('emisor').addEventListener('input', function (e) { st.emisor = e.target.value; save(); renderPreview(); });
+
+  $('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var r = rec();
+    if (r.total <= 0) return;
+    if (!window.jspdf) { setStatus('No se cargó el generador de PDF. Recargá la página.', 'err'); return; }
+    var name = 'Recibo ' + r.depto + ' ' + st.anio + '-' + pad2(st.mes) + '.pdf';
+    try { buildPdf(r).save(name); setStatus('Descargado: ' + name, 'ok'); }
+    catch (err) { setStatus('No se pudo generar el PDF.', 'err'); }
+  });
+
+  renderPreview();
+})();
+</script>
+</body>
+</html>
